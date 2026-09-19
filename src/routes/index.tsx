@@ -1,11 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useState, type ComponentType } from "react";
+import { useEffect, useRef, useState, type ComponentType } from "react";
 import {
   Activity, AlertTriangle, ArrowUpRight, Bell, Boxes, BrainCircuit, CalendarDays, Camera,
   Check, ChevronDown, ChevronRight, CircleGauge, Clock3, CloudOff, Cpu, Database, Filter,
   LayoutDashboard, MapPinned, Menu, Moon, MoveRight, Network, PackageCheck, Radio,
   ScanLine, ShieldCheck, ShoppingBasket, Store, Sun, Users, UserRoundCheck,
-  Wifi, X,
+  Video, Wifi, X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -85,7 +85,32 @@ function SectionTitle({ icon: Icon, title, note }: { icon: Icon; title: string; 
   return <div className="mb-4 flex items-center justify-between"><div><h2 className="flex items-center gap-2 text-sm font-extrabold"><Icon className="size-4 text-insight"/>{title}</h2>{note && <p className="mt-1 text-xs text-muted-foreground">{note}</p>}</div><span className="font-mono text-[10px] text-optimal">● LIVE</span></div>;
 }
 
+function useDeviceCamera() {
+  const [stream, setStream] = useState<MediaStream | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [facing, setFacing] = useState<"user" | "environment">("environment");
+
+  const stop = () => { setStream((current) => { current?.getTracks().forEach((t) => t.stop()); return null; }); };
+
+  const open = async (mode: "user" | "environment") => {
+    setError(null);
+    if (typeof navigator === "undefined" || !navigator.mediaDevices?.getUserMedia) { setError("This browser does not allow camera access."); return; }
+    try {
+      const next = await navigator.mediaDevices.getUserMedia({ video: { facingMode: mode }, audio: false });
+      setStream((current) => { current?.getTracks().forEach((t) => t.stop()); return next; });
+      setFacing(mode);
+    } catch {
+      setError("Camera access was blocked. Allow camera permission in your browser, then try again.");
+    }
+  };
+
+  useEffect(() => () => { stream?.getTracks().forEach((t) => t.stop()); }, [stream]);
+
+  return { stream, error, active: !!stream, start: () => void open(facing), stop, flip: () => void open(facing === "user" ? "environment" : "user") };
+}
+
 function Overview({ rush, stockout }: { rush: boolean; stockout: boolean }) {
+  const live = useDeviceCamera();
   const kpis = [
     { label: "Store Traffic Today", value: rush ? "3,126" : "2,845", meta: "+12% vs average", icon: ShoppingBasket, color: "text-insight", bg: "bg-insight-soft" },
     { label: "Active Shoppers", value: rush ? "218" : "142", meta: rush ? "+40% entrance inflow" : "62% store capacity", icon: Users, color: rush ? "text-warning" : "text-optimal", bg: rush ? "bg-warning-soft" : "bg-optimal-soft" },
@@ -98,7 +123,15 @@ function Overview({ rush, stockout }: { rush: boolean; stockout: boolean }) {
     <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6">{kpis.map(({ label, value, meta, icon: Icon, color, bg }, index) => <div key={label} className="rounded-md border border-border bg-card p-4 shadow-sm"><div className="flex items-start justify-between"><span className="text-[10px] font-bold uppercase text-muted-foreground">{label}</span><span className={`rounded-md p-1.5 ${bg} ${color}`}><Icon className="size-4"/></span></div><div className="mt-3 font-display text-xl font-bold">{value}</div><div className={`mt-1 text-[10px] font-bold ${color}`}>{meta}</div><svg viewBox="0 0 100 16" className="mt-3 h-5 w-full text-insight" aria-hidden="true"><path d={index % 2 ? "M0 12 L10 8 L20 11 L30 5 L40 10 L50 6 L60 12 L70 4 L80 9 L90 5 L100 8" : "M0 9 L10 11 L20 6 L30 12 L40 5 L50 9 L60 4 L70 10 L80 6 L90 11 L100 7"} fill="none" stroke="currentColor" strokeWidth="1.5"/></svg></div>)}</div>
     {rush && <div className="flex flex-col gap-3 rounded-md border border-warning/40 bg-warning-soft p-4 sm:flex-row sm:items-center"><AlertTriangle className="size-5 shrink-0 text-warning"/><div className="flex-1"><div className="text-sm font-bold">Queue spike detected at Checkout Zone</div><div className="text-xs text-muted-foreground">Entrance inflow is 40% above baseline. Counter 4 should be opened now.</div></div><Button size="sm" onClick={() => {}}>Review staffing <ChevronRight/></Button></div>}
     <div className="grid gap-4 xl:grid-cols-12">
-      <div className="rounded-md border border-border bg-card p-4 shadow-sm xl:col-span-7"><SectionTitle icon={Camera} title="Live Computer Vision Grid" note="On-device processing • No identifiable data stored"/><div className="grid grid-cols-2 gap-2"><CameraFeed image={entranceImg} title="Entrance" tag={rush ? "Inflow: 61/min • +40%" : "Shopper #104 • Dwell 3m 12s"} boxes={3}/><CameraFeed image={checkoutImg} title="Checkout Zone" tag={rush ? "Queue: 14 People • ALERT" : "Queue Counter: 6 People"} boxes={4} critical={rush}/><CameraFeed image={groceryImg} title="Aisle 4 • Grocery" tag={stockout ? "Shelf 2 • EMPTY DETECTED" : "Shelf health: 91%"} boxes={3} critical={stockout}/><CameraFeed image={electronicsImg} title="Aisle 7 • Electronics" tag="Shopper #218 • Dwell 1m 08s" boxes={3}/></div></div>
+      <div className="rounded-md border border-border bg-card p-4 shadow-sm xl:col-span-7"><SectionTitle icon={Camera} title="Live Computer Vision Grid" note="On-device processing • No identifiable data stored"/>
+        <div className="mb-3 flex flex-wrap items-center gap-2 rounded-md border border-border bg-muted/40 px-3 py-2">
+          <Video className="size-4 text-insight"/>
+          <span className="flex-1 text-[11px] font-bold">Connect this device as an edge camera</span>
+          {live.active && <Button size="sm" variant="outline" onClick={live.flip}>Flip camera</Button>}
+          <Button size="sm" variant={live.active ? "outline" : "default"} onClick={live.active ? live.stop : live.start}>{live.active ? "Stop device camera" : "Use phone / laptop cam"}</Button>
+        </div>
+        {live.error && <div className="mb-3 rounded-md border border-critical/40 bg-critical-soft px-3 py-2 text-[11px] font-bold text-critical">{live.error}</div>}
+        <div className="grid grid-cols-2 gap-2"><CameraFeed image={entranceImg} title={live.active ? "This Device" : "Entrance"} tag={live.active ? "Local stream • Nothing uploaded" : rush ? "Inflow: 61/min • +40%" : "Shopper #104 • Dwell 3m 12s"} boxes={3} stream={live.stream}/><CameraFeed image={checkoutImg} title="Checkout Zone" tag={rush ? "Queue: 14 People • ALERT" : "Queue Counter: 6 People"} boxes={4} critical={rush}/><CameraFeed image={groceryImg} title="Aisle 4 • Grocery" tag={stockout ? "Shelf 2 • EMPTY DETECTED" : "Shelf health: 91%"} boxes={3} critical={stockout}/><CameraFeed image={electronicsImg} title="Aisle 7 • Electronics" tag="Shopper #218 • Dwell 1m 08s" boxes={3}/></div></div>
       <div className="space-y-4 xl:col-span-5">
         <div className="rounded-md border border-border bg-card p-4 shadow-sm"><SectionTitle icon={MapPinned} title="Store Demand Snapshot"/><div className="grid h-48 grid-cols-5 grid-rows-4 gap-2 rounded-md bg-muted/50 p-3"><div className="col-span-2 row-span-2 flex items-end rounded-md border border-warning/40 bg-warning-soft p-2 text-xs font-bold">Produce · 34</div><div className="col-span-3 row-span-2 flex items-end rounded-md border border-critical/40 bg-critical-soft p-2 text-xs font-bold text-critical">Grocery · 41</div><div className="col-span-2 row-span-2 flex items-end rounded-md border border-optimal/40 bg-optimal-soft p-2 text-xs font-bold">Electronics · 18</div><div className="col-span-3 flex items-end rounded-md border border-optimal/40 bg-optimal-soft p-2 text-xs font-bold">Entrance · 11</div><div className="col-span-3 flex items-end rounded-md border border-warning/40 bg-warning-soft p-2 text-xs font-bold">Checkout · 15</div></div></div>
         <div className="grid grid-cols-2 gap-4"><div className="rounded-md border border-border bg-card p-4 shadow-sm"><div className="text-xs font-bold">Shelf Availability</div><div className="mt-3 font-display text-3xl font-bold text-optimal">92.4%</div><div className="mt-2 h-2 overflow-hidden rounded-full bg-muted"><div className="h-full w-[92%] bg-optimal"/></div><div className="mt-2 text-[10px] text-muted-foreground">3 urgent items</div></div><div className="rounded-md border border-border bg-card p-4 shadow-sm"><div className="text-xs font-bold">Edge Health</div><div className="mt-3 font-display text-3xl font-bold text-optimal">100%</div><div className="mt-2 h-2 overflow-hidden rounded-full bg-muted"><div className="h-full w-full bg-optimal"/></div><div className="mt-2 text-[10px] text-muted-foreground">12 nodes online</div></div></div>
@@ -107,9 +140,13 @@ function Overview({ rush, stockout }: { rush: boolean; stockout: boolean }) {
   </div>;
 }
 
-function CameraFeed({ image, title, tag, boxes, critical = false }: { image: string; title: string; tag: string; boxes: number; critical?: boolean }) {
+function CameraFeed({ image, title, tag, boxes, critical = false, stream = null }: { image: string; title: string; tag: string; boxes: number; critical?: boolean; stream?: MediaStream | null }) {
   const positions = ["left-[15%] top-[30%] h-[38%] w-[13%]", "left-[44%] top-[24%] h-[45%] w-[12%]", "right-[12%] top-[35%] h-[34%] w-[11%]", "left-[66%] top-[28%] h-[40%] w-[10%]"];
-  return <div className="group relative aspect-video overflow-hidden rounded-md bg-muted"><img src={image} alt={`${title} live camera feed`} className="h-full w-full object-cover saturate-[.75] transition duration-500 group-hover:scale-[1.02]" width={1024} height={576}/><div className="absolute inset-0 bg-foreground/10"/><div className="camera-scan absolute inset-x-0 top-0 h-px bg-optimal/60"/>
+  const videoRef = useRef<HTMLVideoElement>(null);
+  useEffect(() => { if (videoRef.current) videoRef.current.srcObject = stream; }, [stream]);
+  return <div className="group relative aspect-video overflow-hidden rounded-md bg-muted">{stream
+    ? <video ref={videoRef} autoPlay playsInline muted className="h-full w-full object-cover"/>
+    : <img src={image} alt={`${title} live camera feed`} className="h-full w-full object-cover saturate-[.75] transition duration-500 group-hover:scale-[1.02]" width={1024} height={576}/>}<div className="absolute inset-0 bg-foreground/10"/><div className="camera-scan absolute inset-x-0 top-0 h-px bg-optimal/60"/>
     {positions.slice(0, boxes).map((p, i) => <div key={p} className={`absolute ${p} border ${critical && i === 1 ? "border-critical" : "border-optimal"}`}><span className={`absolute -top-4 left-0 font-mono text-[8px] ${critical && i === 1 ? "bg-critical" : "bg-optimal"} px-1 text-primary-foreground`}>{critical && i === 1 ? "RISK" : `ID ${104+i}`}</span></div>)}
     <div className="absolute inset-x-0 top-0 flex items-center justify-between bg-foreground/65 px-2 py-1.5 text-primary-foreground"><span className="flex items-center gap-1.5 text-[10px] font-bold"><span className="size-1.5 rounded-full bg-critical"/>{title}</span><span className="font-mono text-[9px]">CAM-{title.length + 10} • 30 FPS</span></div><div className={`absolute bottom-2 left-2 rounded-sm ${critical ? "bg-critical" : "bg-foreground/80"} px-2 py-1 font-mono text-[9px] text-primary-foreground`}>{tag}</div></div>;
 }
