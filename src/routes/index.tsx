@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useState, type ComponentType } from "react";
+import { useEffect, useRef, useState, type ComponentType } from "react";
 import {
   Activity, AlertTriangle, ArrowUpRight, Bell, Boxes, BrainCircuit, CalendarDays, Camera,
   Check, ChevronDown, ChevronRight, CircleGauge, Clock3, CloudOff, Cpu, Database, Filter,
