@@ -140,9 +140,13 @@ function Overview({ rush, stockout }: { rush: boolean; stockout: boolean }) {
   </div>;
 }
 
-function CameraFeed({ image, title, tag, boxes, critical = false }: { image: string; title: string; tag: string; boxes: number; critical?: boolean }) {
+function CameraFeed({ image, title, tag, boxes, critical = false, stream = null }: { image: string; title: string; tag: string; boxes: number; critical?: boolean; stream?: MediaStream | null }) {
   const positions = ["left-[15%] top-[30%] h-[38%] w-[13%]", "left-[44%] top-[24%] h-[45%] w-[12%]", "right-[12%] top-[35%] h-[34%] w-[11%]", "left-[66%] top-[28%] h-[40%] w-[10%]"];
-  return <div className="group relative aspect-video overflow-hidden rounded-md bg-muted"><img src={image} alt={`${title} live camera feed`} className="h-full w-full object-cover saturate-[.75] transition duration-500 group-hover:scale-[1.02]" width={1024} height={576}/><div className="absolute inset-0 bg-foreground/10"/><div className="camera-scan absolute inset-x-0 top-0 h-px bg-optimal/60"/>
+  const videoRef = useRef<HTMLVideoElement>(null);
+  useEffect(() => { if (videoRef.current) videoRef.current.srcObject = stream; }, [stream]);
+  return <div className="group relative aspect-video overflow-hidden rounded-md bg-muted">{stream
+    ? <video ref={videoRef} autoPlay playsInline muted className="h-full w-full object-cover"/>
+    : <img src={image} alt={`${title} live camera feed`} className="h-full w-full object-cover saturate-[.75] transition duration-500 group-hover:scale-[1.02]" width={1024} height={576}/>}<div className="absolute inset-0 bg-foreground/10"/><div className="camera-scan absolute inset-x-0 top-0 h-px bg-optimal/60"/>
     {positions.slice(0, boxes).map((p, i) => <div key={p} className={`absolute ${p} border ${critical && i === 1 ? "border-critical" : "border-optimal"}`}><span className={`absolute -top-4 left-0 font-mono text-[8px] ${critical && i === 1 ? "bg-critical" : "bg-optimal"} px-1 text-primary-foreground`}>{critical && i === 1 ? "RISK" : `ID ${104+i}`}</span></div>)}
     <div className="absolute inset-x-0 top-0 flex items-center justify-between bg-foreground/65 px-2 py-1.5 text-primary-foreground"><span className="flex items-center gap-1.5 text-[10px] font-bold"><span className="size-1.5 rounded-full bg-critical"/>{title}</span><span className="font-mono text-[9px]">CAM-{title.length + 10} • 30 FPS</span></div><div className={`absolute bottom-2 left-2 rounded-sm ${critical ? "bg-critical" : "bg-foreground/80"} px-2 py-1 font-mono text-[9px] text-primary-foreground`}>{tag}</div></div>;
 }
