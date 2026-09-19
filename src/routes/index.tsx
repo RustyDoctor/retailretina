@@ -85,7 +85,32 @@ function SectionTitle({ icon: Icon, title, note }: { icon: Icon; title: string; 
   return <div className="mb-4 flex items-center justify-between"><div><h2 className="flex items-center gap-2 text-sm font-extrabold"><Icon className="size-4 text-insight"/>{title}</h2>{note && <p className="mt-1 text-xs text-muted-foreground">{note}</p>}</div><span className="font-mono text-[10px] text-optimal">● LIVE</span></div>;
 }
 
+function useDeviceCamera() {
+  const [stream, setStream] = useState<MediaStream | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [facing, setFacing] = useState<"user" | "environment">("environment");
+
+  const stop = () => { setStream((current) => { current?.getTracks().forEach((t) => t.stop()); return null; }); };
+
+  const open = async (mode: "user" | "environment") => {
+    setError(null);
+    if (typeof navigator === "undefined" || !navigator.mediaDevices?.getUserMedia) { setError("This browser does not allow camera access."); return; }
+    try {
+      const next = await navigator.mediaDevices.getUserMedia({ video: { facingMode: mode }, audio: false });
+      setStream((current) => { current?.getTracks().forEach((t) => t.stop()); return next; });
+      setFacing(mode);
+    } catch {
+      setError("Camera access was blocked. Allow camera permission in your browser, then try again.");
+    }
+  };
+
+  useEffect(() => () => { stream?.getTracks().forEach((t) => t.stop()); }, [stream]);
+
+  return { stream, error, active: !!stream, start: () => void open(facing), stop, flip: () => void open(facing === "user" ? "environment" : "user") };
+}
+
 function Overview({ rush, stockout }: { rush: boolean; stockout: boolean }) {
+  const live = useDeviceCamera();
   const kpis = [
     { label: "Store Traffic Today", value: rush ? "3,126" : "2,845", meta: "+12% vs average", icon: ShoppingBasket, color: "text-insight", bg: "bg-insight-soft" },
     { label: "Active Shoppers", value: rush ? "218" : "142", meta: rush ? "+40% entrance inflow" : "62% store capacity", icon: Users, color: rush ? "text-warning" : "text-optimal", bg: rush ? "bg-warning-soft" : "bg-optimal-soft" },
