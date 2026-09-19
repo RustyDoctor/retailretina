@@ -5,7 +5,7 @@ import {
   Check, ChevronDown, ChevronRight, CircleGauge, Clock3, CloudOff, Cpu, Database, Filter,
   LayoutDashboard, MapPinned, Menu, Moon, MoveRight, Network, PackageCheck, Radio,
   ScanLine, ShieldCheck, ShoppingBasket, Store, Sun, Users, UserRoundCheck,
-  Wifi, X,
+  Video, Wifi, X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
