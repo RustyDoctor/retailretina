@@ -3,7 +3,7 @@ import { useEffect, useState, type ComponentType } from "react";
 import {
   Activity, AlertTriangle, ArrowUpRight, Boxes, BrainCircuit, Camera,
   Check, ChevronRight, CircleGauge, Clock3, CloudOff, Cpu, Database,
-  LayoutDashboard, Menu, Moon, Network, PackageCheck, Radio, RefreshCw,
+  LayoutDashboard, MapPinned, Menu, Moon, MoveRight, Network, PackageCheck, Radio,
   ScanLine, ShieldCheck, ShoppingBasket, Store, Sun, Users, UserRoundCheck,
   Wifi, X,
 } from "lucide-react";
@@ -26,11 +26,12 @@ export const Route = createFileRoute("/")({
   component: EdgeRetailDashboard,
 });
 
-type Tab = "overview" | "inventory" | "queues" | "architecture";
+type Tab = "overview" | "heatmap" | "inventory" | "queues" | "architecture";
 type Icon = ComponentType<{ className?: string }>;
 
 const tabs: { id: Tab; label: string; icon: Icon }[] = [
   { id: "overview", label: "Overview", icon: LayoutDashboard },
+  { id: "heatmap", label: "Demand Heat Map", icon: MapPinned },
   { id: "inventory", label: "Inventory Radar", icon: Boxes },
   { id: "queues", label: "Queue Optimizer", icon: Users },
   { id: "architecture", label: "Edge & Privacy", icon: Cpu },
@@ -86,6 +87,7 @@ function EdgeRetailDashboard() {
               <div className="flex flex-wrap gap-2"><Button variant={rush ? "destructive" : "outline"} size="sm" onClick={() => { setRush(v => !v); if (!rush) setTab("queues"); }}><Users/>{rush ? "End Rush Simulation" : "Simulate Rush Hour"}</Button><Button variant={stockout ? "destructive" : "outline"} size="sm" onClick={() => { setStockout(v => !v); if (!stockout) setTab("inventory"); }}><PackageCheck/>{stockout ? "Reset Shelf" : "Simulate Stock-out"}</Button></div>
             </div>
             {tab === "overview" && <Overview rush={rush} stockout={stockout}/>} 
+            {tab === "heatmap" && <DemandHeatMap rush={rush}/>} 
             {tab === "inventory" && <Inventory stockout={stockout} setStockout={setStockout}/>} 
             {tab === "queues" && <Queues rush={rush} setRush={setRush}/>} 
             {tab === "architecture" && <Architecture/>}
@@ -120,6 +122,82 @@ function CameraFeed({ image, title, tag, boxes, critical = false }: { image: str
   return <div className="group relative aspect-video overflow-hidden rounded-md bg-muted"><img src={image} alt={`${title} live camera feed`} className="h-full w-full object-cover saturate-[.75] transition duration-500 group-hover:scale-[1.02]" width={1024} height={576}/><div className="absolute inset-0 bg-foreground/10"/><div className="camera-scan absolute inset-x-0 top-0 h-px bg-optimal/60"/>
     {positions.slice(0, boxes).map((p, i) => <div key={p} className={`absolute ${p} border ${critical && i === 1 ? "border-critical" : "border-optimal"}`}><span className={`absolute -top-4 left-0 font-mono text-[8px] ${critical && i === 1 ? "bg-critical" : "bg-optimal"} px-1 text-primary-foreground`}>{critical && i === 1 ? "RISK" : `ID ${104+i}`}</span></div>)}
     <div className="absolute inset-x-0 top-0 flex items-center justify-between bg-foreground/65 px-2 py-1.5 text-primary-foreground"><span className="flex items-center gap-1.5 text-[10px] font-bold"><span className="size-1.5 rounded-full bg-critical"/>{title}</span><span className="font-mono text-[9px]">CAM-{title.length + 10} • 30 FPS</span></div><div className={`absolute bottom-2 left-2 rounded-sm ${critical ? "bg-critical" : "bg-foreground/80"} px-2 py-1 font-mono text-[9px] text-primary-foreground`}>{tag}</div></div>;
+}
+
+type DemandZone = {
+  name: string;
+  shoppers: number;
+  rushShoppers: number;
+  dwell: string;
+  staff: number;
+  recommended: number;
+  rushRecommended: number;
+  area: string;
+};
+
+const demandZones: DemandZone[] = [
+  { name: "Produce", shoppers: 34, rushShoppers: 42, dwell: "6m 18s", staff: 4, recommended: 5, rushRecommended: 5, area: "col-span-3 row-span-2" },
+  { name: "Bakery", shoppers: 16, rushShoppers: 21, dwell: "4m 02s", staff: 3, recommended: 3, rushRecommended: 3, area: "col-span-2 row-span-2" },
+  { name: "Customer Care", shoppers: 7, rushShoppers: 9, dwell: "3m 44s", staff: 3, recommended: 2, rushRecommended: 2, area: "col-span-2 row-span-2" },
+  { name: "Grocery Aisles", shoppers: 41, rushShoppers: 53, dwell: "8m 51s", staff: 8, recommended: 8, rushRecommended: 9, area: "col-span-4 row-span-3" },
+  { name: "Electronics", shoppers: 18, rushShoppers: 24, dwell: "7m 12s", staff: 3, recommended: 4, rushRecommended: 4, area: "col-span-3 row-span-3" },
+  { name: "Entrance", shoppers: 11, rushShoppers: 29, dwell: "0m 48s", staff: 2, recommended: 2, rushRecommended: 3, area: "col-span-2 row-span-2" },
+  { name: "Checkout", shoppers: 15, rushShoppers: 40, dwell: "2m 08s", staff: 4, recommended: 5, rushRecommended: 7, area: "col-span-5 row-span-2" },
+];
+
+function DemandHeatMap({ rush }: { rush: boolean }) {
+  const [staffing, setStaffing] = useState<Record<string, number>>(() => Object.fromEntries(demandZones.map(zone => [zone.name, zone.staff])));
+  const [lastMove, setLastMove] = useState<string | null>(null);
+  const zoneData = demandZones.map(zone => ({
+    ...zone,
+    activeShoppers: rush ? zone.rushShoppers : zone.shoppers,
+    target: rush ? zone.rushRecommended : zone.recommended,
+    currentStaff: staffing[zone.name] ?? zone.staff,
+  }));
+  const hottest = [...zoneData].sort((a, b) => (b.activeShoppers / Math.max(b.currentStaff, 1)) - (a.activeShoppers / Math.max(a.currentStaff, 1)))[0];
+  const source = [...zoneData].filter(zone => zone.currentStaff > zone.target).sort((a, b) => (b.currentStaff - b.target) - (a.currentStaff - a.target))[0];
+
+  const moveStaff = () => {
+    if (!hottest || !source || hottest.name === source.name) return;
+    setStaffing(current => ({ ...current, [source.name]: (current[source.name] ?? source.staff) - 1, [hottest.name]: (current[hottest.name] ?? hottest.staff) + 1 }));
+    setLastMove(`One staff member moved from ${source.name} to ${hottest.name}.`);
+  };
+
+  return <div className="space-y-5">
+    <div className="grid gap-5 xl:grid-cols-[minmax(0,1.6fr)_minmax(280px,.7fr)]">
+      <div className="rounded-md border border-border bg-card p-4 shadow-sm">
+        <SectionTitle icon={MapPinned} title="Live Store Demand Map" note="Shopper density and staff coverage by zone • updates every 5 seconds"/>
+        <div className="mb-4 flex flex-wrap gap-4 text-[10px] font-bold text-muted-foreground"><span className="flex items-center gap-1.5"><span className="size-2 rounded-full bg-optimal"/>Balanced</span><span className="flex items-center gap-1.5"><span className="size-2 rounded-full bg-warning"/>High demand</span><span className="flex items-center gap-1.5"><span className="size-2 rounded-full bg-critical"/>Urgent</span><span className="ml-auto font-mono">142 ACTIVE SHOPPERS</span></div>
+        <div className="relative overflow-hidden rounded-md border-2 border-border bg-background p-2 sm:p-4">
+          <div className="pointer-events-none absolute inset-0 opacity-30 [background-image:linear-gradient(var(--border)_1px,transparent_1px),linear-gradient(90deg,var(--border)_1px,transparent_1px)] [background-size:24px_24px]"/>
+          <div className="relative grid min-h-[500px] grid-cols-7 grid-rows-7 gap-2">
+            {zoneData.map(zone => {
+              const gap = zone.target - zone.currentStaff;
+              const urgent = gap >= 2 || zone.activeShoppers / Math.max(zone.currentStaff, 1) > 8;
+              const warning = !urgent && (gap > 0 || zone.activeShoppers / Math.max(zone.currentStaff, 1) > 6);
+              const tone = urgent ? "border-critical/70 bg-critical-soft" : warning ? "border-warning/70 bg-warning-soft" : "border-optimal/60 bg-optimal-soft";
+              const text = urgent ? "text-critical" : warning ? "text-warning" : "text-optimal";
+              return <div key={zone.name} className={`${zone.area} relative flex min-w-0 flex-col justify-between overflow-hidden rounded-md border ${tone} p-3 transition-colors`}>
+                {(urgent || warning) && <span className={`absolute right-2 top-2 size-2 rounded-full ${urgent ? "bg-critical" : "bg-warning"} animate-pulse`}/>} 
+                <div><div className="pr-4 text-xs font-extrabold sm:text-sm">{zone.name}</div><div className="mt-1 font-mono text-[9px] text-muted-foreground">DWELL {zone.dwell}</div></div>
+                <div><div className={`text-xl font-extrabold sm:text-2xl ${text}`}>{zone.activeShoppers}</div><div className="text-[9px] text-muted-foreground">shoppers now</div><div className="mt-2 flex flex-wrap items-center gap-x-2 text-[9px] font-bold"><span>{zone.currentStaff} staff</span><span className={gap > 0 ? "text-critical" : "text-optimal"}>AI: {zone.target}</span></div></div>
+              </div>;
+            })}
+          </div>
+          <div className="relative mx-auto mt-2 w-32 border-t-4 border-insight pt-1 text-center font-mono text-[9px] font-bold text-insight">MAIN ENTRANCE</div>
+        </div>
+      </div>
+
+      <div className="space-y-4">
+        <div className="rounded-md border border-insight/40 bg-insight-soft p-4">
+          <div className="flex items-center gap-2 text-xs font-extrabold text-insight"><BrainCircuit className="size-4"/>AI STAFFING RECOMMENDATION</div>
+          {source && hottest && source.name !== hottest.name ? <><div className="mt-4 text-lg font-extrabold">Move 1 staff member</div><div className="mt-3 flex items-center gap-2 text-sm"><span className="rounded-sm bg-background px-2 py-1 font-bold">{source.name}</span><MoveRight className="size-4 text-insight"/><span className="rounded-sm bg-background px-2 py-1 font-bold">{hottest.name}</span></div><p className="mt-3 text-xs leading-5 text-muted-foreground">{hottest.name} has {hottest.activeShoppers} shoppers with {hottest.currentStaff} staff. Reassignment should improve response coverage by 18%.</p><Button className="mt-4 w-full" onClick={moveStaff}><UserRoundCheck/>Move Staff Now</Button></> : <div className="mt-4 flex items-center gap-3 text-sm font-bold text-optimal"><Check className="size-5"/>All zones are adequately staffed.</div>}
+        </div>
+        {lastMove && <div className="rounded-md border border-optimal/40 bg-optimal-soft p-4"><div className="flex gap-3 text-sm font-bold text-optimal"><Check className="size-5 shrink-0"/><span>{lastMove}</span></div><Button size="sm" variant="ghost" className="mt-2" onClick={() => setLastMove(null)}>Dismiss</Button></div>}
+        <div className="rounded-md border border-border bg-card p-4"><h3 className="text-sm font-extrabold">Demand ranking</h3><div className="mt-4 space-y-3">{[...zoneData].sort((a,b) => b.activeShoppers-a.activeShoppers).slice(0,5).map((zone, index) => <div key={zone.name} className="flex items-center gap-3"><span className="font-mono text-[10px] text-muted-foreground">0{index+1}</span><div className="min-w-0 flex-1"><div className="flex justify-between gap-3 text-xs"><span className="truncate font-bold">{zone.name}</span><span className="font-mono">{zone.activeShoppers}</span></div><div className="mt-1 h-1 overflow-hidden rounded-full bg-muted"><div className={index === 0 ? "h-full bg-critical" : index < 3 ? "h-full bg-warning" : "h-full bg-optimal"} style={{ width: `${Math.min(zone.activeShoppers * 2, 100)}%` }}/></div></div></div>)}</div></div>
+      </div>
+    </div>
+  </div>;
 }
 
 const normalProducts = [
