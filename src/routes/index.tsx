@@ -1,8 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState, type ComponentType } from "react";
 import {
-  Activity, AlertTriangle, ArrowUpRight, Boxes, BrainCircuit, Camera,
-  Check, ChevronRight, CircleGauge, Clock3, CloudOff, Cpu, Database,
+  Activity, AlertTriangle, ArrowUpRight, Bell, Boxes, BrainCircuit, CalendarDays, Camera,
+  Check, ChevronDown, ChevronRight, CircleGauge, Clock3, CloudOff, Cpu, Database, Filter,
   LayoutDashboard, MapPinned, Menu, Moon, MoveRight, Network, PackageCheck, Radio,
   ScanLine, ShieldCheck, ShoppingBasket, Store, Sun, Users, UserRoundCheck,
   Wifi, X,
@@ -39,7 +39,7 @@ const tabs: { id: Tab; label: string; icon: Icon }[] = [
 
 function EdgeRetailDashboard() {
   const [tab, setTab] = useState<Tab>("overview");
-  const [dark, setDark] = useState(true);
+  const [dark, setDark] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [rush, setRush] = useState(false);
   const [stockout, setStockout] = useState(false);
@@ -50,42 +50,26 @@ function EdgeRetailDashboard() {
 
   const selectTab = (id: Tab) => { setTab(id); setMenuOpen(false); };
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      <header className="sticky top-0 z-50 border-b border-border bg-background/95 backdrop-blur">
-        <div className="flex h-16 items-center gap-4 px-4 lg:px-6">
-          <div className="flex min-w-0 items-center gap-3">
-            <div className="flex size-9 shrink-0 items-center justify-center rounded-md bg-primary text-primary-foreground"><ScanLine className="size-5" /></div>
-            <div className="min-w-0"><div className="truncate text-base font-extrabold">EdgeRetail <span className="text-insight">AI</span></div><div className="hidden text-[10px] font-semibold uppercase text-muted-foreground sm:block">Operations Intelligence</div></div>
-          </div>
-          <div className="ml-auto hidden items-center gap-2 rounded-md border border-optimal/30 bg-optimal-soft px-3 py-1.5 md:flex">
-            <span className="relative flex size-2"><span className="absolute inline-flex size-full animate-ping rounded-full bg-optimal opacity-70"/><span className="relative inline-flex size-2 rounded-full bg-optimal"/></span>
-            <span className="text-xs font-bold text-optimal">Connected Edge Nodes: 12/12 Online</span><span className="text-xs text-muted-foreground">• 0 Cloud Latency</span>
-          </div>
-          <div className="flex items-center gap-2 border-l border-border pl-3">
-            <Sun className="size-4 text-muted-foreground"/><Switch checked={dark} onCheckedChange={setDark} aria-label="Toggle dark mode"/><Moon className="size-4 text-muted-foreground"/>
-            <Button variant="ghost" size="icon" className="lg:hidden" onClick={() => setMenuOpen(v => !v)} aria-label="Open navigation">{menuOpen ? <X/> : <Menu/>}</Button>
-          </div>
-        </div>
-      </header>
-
-      <div className="flex">
-        <aside className={`${menuOpen ? "flex" : "hidden"} fixed inset-x-0 top-16 z-40 h-[calc(100vh-4rem)] flex-col border-r border-border bg-card p-3 lg:sticky lg:top-16 lg:flex lg:h-[calc(100vh-4rem)] lg:w-60`}>
-          <div className="mb-3 px-3 py-3"><div className="text-[10px] font-bold uppercase text-muted-foreground">Active location</div><div className="mt-1 flex items-center gap-2 text-sm font-bold"><Store className="size-4 text-insight"/>Flagship Store #001</div><div className="mt-1 text-xs text-muted-foreground">Downtown • 48,200 sq ft</div></div>
+    <div className="min-h-screen bg-background text-foreground lg:flex">
+        <aside className={`${menuOpen ? "flex" : "hidden"} fixed inset-0 z-50 flex-col border-r border-border bg-card p-4 lg:sticky lg:top-0 lg:flex lg:h-screen lg:w-60 lg:shrink-0`}>
+          <div className="mb-7 flex items-center gap-3 px-2 py-2"><div className="flex size-9 items-center justify-center rounded-md bg-primary text-primary-foreground"><ScanLine className="size-5"/></div><div><div className="font-display text-lg font-bold">EdgeRetail AI</div><div className="text-[9px] font-bold uppercase text-muted-foreground">Retail Intelligence</div></div><Button variant="ghost" size="icon" className="ml-auto lg:hidden" onClick={() => setMenuOpen(false)}><X/></Button></div>
+          <div className="mb-3 px-3"><div className="text-[9px] font-bold uppercase text-muted-foreground">Flagship network</div></div>
           <nav className="space-y-1">
-            {tabs.map(({ id, label, icon: Icon }) => <Button key={id} variant={tab === id ? "secondary" : "ghost"} className={`w-full justify-start ${tab === id ? "border-l-2 border-insight bg-insight-soft text-insight" : "text-muted-foreground"}`} onClick={() => selectTab(id)}><Icon/>{label}</Button>)}
+            {tabs.map(({ id, label, icon: Icon }) => <Button key={id} variant="ghost" className={`w-full justify-start text-xs ${tab === id ? "bg-insight-soft text-insight hover:bg-insight-soft hover:text-insight" : "text-muted-foreground"}`} onClick={() => selectTab(id)}><Icon/>{label}</Button>)}
           </nav>
           <div className="mt-auto space-y-3">
-            <div className="rounded-md border border-border bg-background p-3"><div className="flex items-center justify-between text-xs"><span className="font-semibold">Edge Health</span><span className="text-optimal">Optimal</span></div><div className="mt-2 h-1.5 overflow-hidden rounded-full bg-muted"><div className="h-full w-full bg-optimal"/></div><div className="mt-2 font-mono text-[10px] text-muted-foreground">Last sync 12:30:04 • 30 FPS</div></div>
-            <div className="flex items-center gap-3 border-t border-border px-2 pt-3"><div className="flex size-8 items-center justify-center rounded-full bg-insight-soft text-xs font-bold text-insight">AM</div><div className="min-w-0"><div className="truncate text-xs font-bold">Alex Morgan</div><div className="text-[10px] text-muted-foreground">Store Operations Lead</div></div></div>
+            <div className="rounded-md border border-border bg-background p-3"><div className="flex items-center gap-3"><div className="flex size-8 items-center justify-center rounded-md bg-primary text-xs font-bold text-primary-foreground">FS</div><div><div className="text-xs font-bold">Flagship Store #001</div><div className="text-[10px] text-muted-foreground">Downtown • Enterprise</div></div></div></div>
+            <div className="flex items-center gap-3 border-t border-border px-2 pt-3"><div className="flex size-8 items-center justify-center rounded-full bg-insight-soft text-xs font-bold text-insight">AM</div><div className="min-w-0"><div className="truncate text-xs font-bold">Alex Morgan</div><div className="text-[10px] text-muted-foreground">Operations Lead</div></div><span className="ml-auto size-2 rounded-full bg-optimal"/></div>
           </div>
         </aside>
 
-        <main className="min-w-0 flex-1 p-4 lg:p-6">
+        <main className="min-w-0 flex-1 p-4 lg:p-7">
           <div className="mx-auto max-w-[1520px]">
-            <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-              <div><div className="mb-1 flex items-center gap-2 text-xs font-bold text-optimal"><Radio className="size-3 animate-pulse"/>LIVE OPERATIONS</div><h1 className="text-2xl font-extrabold md:text-3xl">{tabs.find(t => t.id === tab)?.label}</h1><p className="mt-1 text-sm text-muted-foreground">Saturday, September 19 • Peak trading window</p></div>
-              <div className="flex flex-wrap gap-2"><Button variant={rush ? "destructive" : "outline"} size="sm" onClick={() => { setRush(v => !v); if (!rush) setTab("queues"); }}><Users/>{rush ? "End Rush Simulation" : "Simulate Rush Hour"}</Button><Button variant={stockout ? "destructive" : "outline"} size="sm" onClick={() => { setStockout(v => !v); if (!stockout) setTab("inventory"); }}><PackageCheck/>{stockout ? "Reset Shelf" : "Simulate Stock-out"}</Button></div>
+            <div className="mb-6 flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+              <div className="flex items-start gap-3"><Button variant="ghost" size="icon" className="lg:hidden" onClick={() => setMenuOpen(true)}><Menu/></Button><div><h1 className="font-display text-2xl font-bold">{tab === "overview" ? "Monitoring" : tabs.find(t => t.id === tab)?.label}</h1><p className="mt-1 text-sm text-muted-foreground">Real-time store visibility and operational monitoring across your network.</p></div></div>
+              <div className="flex flex-wrap items-center gap-2"><div className="hidden items-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-xs md:flex"><CalendarDays className="size-4"/>Sep 19, 2026 • Live<ChevronDown className="size-3"/></div><Button variant="outline" size="sm"><Filter/>Filters</Button><Button variant="outline" size="icon"><Bell/></Button><div className="flex items-center gap-2 px-1"><Sun className="size-3 text-muted-foreground"/><Switch checked={dark} onCheckedChange={setDark} aria-label="Toggle dark mode"/><Moon className="size-3 text-muted-foreground"/></div></div>
             </div>
+            <div className="mb-5 flex flex-col gap-3 rounded-md border border-optimal/25 bg-card px-4 py-3 sm:flex-row sm:items-center"><div className="flex flex-1 items-center gap-2"><span className="relative flex size-2"><span className="absolute inline-flex size-full animate-ping rounded-full bg-optimal opacity-60"/><span className="relative size-2 rounded-full bg-optimal"/></span><span className="text-xs font-bold">Connected Edge Nodes: 12/12 Online</span><span className="text-xs text-muted-foreground">• 0 Cloud Latency</span></div><div className="flex flex-wrap gap-2"><Button variant={rush ? "destructive" : "outline"} size="sm" onClick={() => { setRush(v => !v); if (!rush) setTab("queues"); }}><Users/>{rush ? "End Rush" : "Simulate Rush"}</Button><Button variant={stockout ? "destructive" : "outline"} size="sm" onClick={() => { setStockout(v => !v); if (!stockout) setTab("inventory"); }}><PackageCheck/>{stockout ? "Reset Shelf" : "Stock-out"}</Button></div></div>
             {tab === "overview" && <Overview rush={rush} stockout={stockout}/>} 
             {tab === "heatmap" && <DemandHeatMap rush={rush}/>} 
             {tab === "inventory" && <Inventory stockout={stockout} setStockout={setStockout}/>} 
@@ -93,7 +77,6 @@ function EdgeRetailDashboard() {
             {tab === "architecture" && <Architecture/>}
           </div>
         </main>
-      </div>
     </div>
   );
 }
