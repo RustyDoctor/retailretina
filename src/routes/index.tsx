@@ -1,9 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useRef, useState, type ComponentType } from "react";
+import { useCallback, useEffect, useRef, useState, type ComponentType } from "react";
 import {
   Activity, AlertTriangle, ArrowUpRight, Bell, Boxes, BrainCircuit, CalendarDays, Camera,
   Check, ChevronDown, ChevronRight, CircleGauge, Clock3, CloudOff, Cpu, Database, Filter,
-  LayoutDashboard, MapPinned, Menu, Moon, MoveRight, Network, PackageCheck, Radio,
+  BarChart3, LayoutDashboard, LogIn, LogOut, MapPinned, Menu, Moon, MoveRight, Network, PackageCheck, Radio,
   ScanLine, ShieldCheck, ShoppingBasket, Store, Sun, Users, UserRoundCheck,
   Video, Wifi, X,
 } from "lucide-react";
@@ -16,33 +16,35 @@ import electronicsImg from "@/assets/camera-electronics.jpg";
 
 export const Route = createFileRoute("/")({
   head: () => ({ meta: [
-    { title: "Operations Command Center — EdgeRetail AI" },
+    { title: "Operations Command Center — RetailRetina" },
     { name: "description", content: "Real-time shopper analytics, inventory intelligence, and queue optimization powered by private edge AI." },
-    { property: "og:title", content: "Operations Command Center — EdgeRetail AI" },
+    { property: "og:title", content: "Operations Command Center — RetailRetina" },
     { property: "og:description", content: "Real-time retail intelligence powered by private, on-device AI." },
     { property: "og:type", content: "website" },
     { name: "twitter:card", content: "summary_large_image" },
   ]}),
-  component: EdgeRetailDashboard,
+  component: RetailRetinaDashboard,
 });
 
-type Tab = "overview" | "heatmap" | "inventory" | "queues" | "architecture";
+type Tab = "overview" | "staffing" | "heatmap" | "inventory" | "queues" | "architecture";
 type Icon = ComponentType<{ className?: string }>;
 
 const tabs: { id: Tab; label: string; icon: Icon }[] = [
   { id: "overview", label: "Overview", icon: LayoutDashboard },
+  { id: "staffing", label: "Traffic & Staffing", icon: BarChart3 },
   { id: "heatmap", label: "Demand Heat Map", icon: MapPinned },
   { id: "inventory", label: "Inventory Radar", icon: Boxes },
   { id: "queues", label: "Queue Optimizer", icon: Users },
   { id: "architecture", label: "Edge & Privacy", icon: Cpu },
 ];
 
-function EdgeRetailDashboard() {
+function RetailRetinaDashboard() {
   const [tab, setTab] = useState<Tab>("overview");
   const [dark, setDark] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [rush, setRush] = useState(false);
   const [stockout, setStockout] = useState(false);
+  const [activeShoppers, setActiveShoppers] = useState(142);
 
   useEffect(() => {
     document.documentElement.classList.toggle("dark", dark);
@@ -52,7 +54,7 @@ function EdgeRetailDashboard() {
   return (
     <div className="min-h-screen bg-background text-foreground lg:flex">
         <aside className={`${menuOpen ? "flex" : "hidden"} fixed inset-0 z-50 flex-col border-r border-border bg-card p-4 lg:sticky lg:top-0 lg:flex lg:h-screen lg:w-60 lg:shrink-0`}>
-          <div className="mb-7 flex items-center gap-3 px-2 py-2"><div className="flex size-9 items-center justify-center rounded-md bg-primary text-primary-foreground"><ScanLine className="size-5"/></div><div><div className="font-display text-lg font-bold">EdgeRetail AI</div><div className="text-[9px] font-bold uppercase text-muted-foreground">Retail Intelligence</div></div><Button variant="ghost" size="icon" className="ml-auto lg:hidden" onClick={() => setMenuOpen(false)}><X/></Button></div>
+           <div className="mb-7 flex items-center gap-3 px-2 py-2"><div className="flex size-9 items-center justify-center rounded-md bg-primary text-primary-foreground"><ScanLine className="size-5"/></div><div><div className="font-display text-lg font-bold">RetailRetina</div><div className="text-[9px] font-bold uppercase text-muted-foreground">Retail Intelligence</div></div><Button variant="ghost" size="icon" className="ml-auto lg:hidden" onClick={() => setMenuOpen(false)}><X/></Button></div>
           <div className="mb-3 px-3"><div className="text-[9px] font-bold uppercase text-muted-foreground">Flagship network</div></div>
           <nav className="space-y-1">
             {tabs.map(({ id, label, icon: Icon }) => <Button key={id} variant="ghost" className={`w-full justify-start text-xs ${tab === id ? "bg-insight-soft text-insight hover:bg-insight-soft hover:text-insight" : "text-muted-foreground"}`} onClick={() => selectTab(id)}><Icon/>{label}</Button>)}
@@ -70,7 +72,8 @@ function EdgeRetailDashboard() {
               <div className="flex flex-wrap items-center gap-2"><div className="hidden items-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-xs md:flex"><CalendarDays className="size-4"/>Sep 19, 2026 • Live<ChevronDown className="size-3"/></div><Button variant="outline" size="sm"><Filter/>Filters</Button><Button variant="outline" size="icon"><Bell/></Button><div className="flex items-center gap-2 px-1"><Sun className="size-3 text-muted-foreground"/><Switch checked={dark} onCheckedChange={setDark} aria-label="Toggle dark mode"/><Moon className="size-3 text-muted-foreground"/></div></div>
             </div>
             <div className="mb-5 flex flex-col gap-3 rounded-md border border-optimal/25 bg-card px-4 py-3 sm:flex-row sm:items-center"><div className="flex flex-1 items-center gap-2"><span className="relative flex size-2"><span className="absolute inline-flex size-full animate-ping rounded-full bg-optimal opacity-60"/><span className="relative size-2 rounded-full bg-optimal"/></span><span className="text-xs font-bold">Connected Edge Nodes: 12/12 Online</span><span className="text-xs text-muted-foreground">• 0 Cloud Latency</span></div><div className="flex flex-wrap gap-2"><Button variant={rush ? "destructive" : "outline"} size="sm" onClick={() => { setRush(v => !v); if (!rush) setTab("queues"); }}><Users/>{rush ? "End Rush" : "Simulate Rush"}</Button><Button variant={stockout ? "destructive" : "outline"} size="sm" onClick={() => { setStockout(v => !v); if (!stockout) setTab("inventory"); }}><PackageCheck/>{stockout ? "Reset Shelf" : "Stock-out"}</Button></div></div>
-            {tab === "overview" && <Overview rush={rush} stockout={stockout}/>} 
+             {tab === "overview" && <Overview rush={rush} stockout={stockout} activeShoppers={activeShoppers} setActiveShoppers={setActiveShoppers}/>} 
+             {tab === "staffing" && <TrafficStaffing rush={rush} activeShoppers={activeShoppers}/>} 
             {tab === "heatmap" && <DemandHeatMap rush={rush}/>} 
             {tab === "inventory" && <Inventory stockout={stockout} setStockout={setStockout}/>} 
             {tab === "queues" && <Queues rush={rush} setRush={setRush}/>} 
@@ -88,17 +91,20 @@ function SectionTitle({ icon: Icon, title, note }: { icon: Icon; title: string; 
 function useDeviceCamera() {
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [facing, setFacing] = useState<"user" | "environment">("environment");
+  const [devices, setDevices] = useState<MediaDeviceInfo[]>([]);
+  const [deviceIndex, setDeviceIndex] = useState(0);
 
   const stop = () => { setStream((current) => { current?.getTracks().forEach((t) => t.stop()); return null; }); };
 
-  const open = async (mode: "user" | "environment") => {
+  const open = async () => {
     setError(null);
     if (typeof navigator === "undefined" || !navigator.mediaDevices?.getUserMedia) { setError("This browser does not allow camera access."); return; }
     try {
-      const next = await navigator.mediaDevices.getUserMedia({ video: { facingMode: mode }, audio: false });
+      const selected = devices[deviceIndex];
+      const next = await navigator.mediaDevices.getUserMedia({ video: selected ? { deviceId: { exact: selected.deviceId } } : true, audio: false });
       setStream((current) => { current?.getTracks().forEach((t) => t.stop()); return next; });
-      setFacing(mode);
+      const available = (await navigator.mediaDevices.enumerateDevices()).filter((device) => device.kind === "videoinput");
+      setDevices(available);
     } catch {
       setError("Camera access was blocked. Allow camera permission in your browser, then try again.");
     }
@@ -106,14 +112,21 @@ function useDeviceCamera() {
 
   useEffect(() => () => { stream?.getTracks().forEach((t) => t.stop()); }, [stream]);
 
-  return { stream, error, active: !!stream, start: () => void open(facing), stop, flip: () => void open(facing === "user" ? "environment" : "user") };
+  const nextDevice = () => { if (devices.length < 2) return; stop(); setDeviceIndex((current) => (current + 1) % devices.length); };
+  return { stream, error, devices, deviceIndex, active: !!stream, start: () => void open(), stop, nextDevice };
 }
 
-function Overview({ rush, stockout }: { rush: boolean; stockout: boolean }) {
-  const live = useDeviceCamera();
+function Overview({ rush, stockout, activeShoppers, setActiveShoppers }: { rush: boolean; stockout: boolean; activeShoppers: number; setActiveShoppers: React.Dispatch<React.SetStateAction<number>> }) {
+  const cameraOne = useDeviceCamera();
+  const cameraTwo = useDeviceCamera();
+  const [crossings, setCrossings] = useState([{ entries: 0, exits: 0 }, { entries: 0, exits: 0 }]);
+  const registerCrossing = useCallback((camera: number, direction: "in" | "out") => {
+    setActiveShoppers((current) => direction === "in" ? current + 1 : Math.max(0, current - 1));
+    setCrossings((current) => current.map((count, index) => index === camera ? { entries: count.entries + (direction === "in" ? 1 : 0), exits: count.exits + (direction === "out" ? 1 : 0) } : count));
+  }, [setActiveShoppers]);
   const kpis = [
     { label: "Store Traffic Today", value: rush ? "3,126" : "2,845", meta: "+12% vs average", icon: ShoppingBasket, color: "text-insight", bg: "bg-insight-soft" },
-    { label: "Active Shoppers", value: rush ? "218" : "142", meta: rush ? "+40% entrance inflow" : "62% store capacity", icon: Users, color: rush ? "text-warning" : "text-optimal", bg: rush ? "bg-warning-soft" : "bg-optimal-soft" },
+    { label: "Active Shoppers", value: String(activeShoppers + (rush ? 76 : 0)), meta: "Live tripwire count", icon: Users, color: rush ? "text-warning" : "text-optimal", bg: rush ? "bg-warning-soft" : "bg-optimal-soft" },
     { label: "Stock-out Risk", value: stockout ? "4 items" : "3 items", meta: "Urgent attention", icon: AlertTriangle, color: "text-critical", bg: "bg-critical-soft" },
     { label: "Avg. Queue Wait", value: rush ? "4m 18s" : "1m 45s", meta: rush ? "Above threshold" : "Optimal", icon: Clock3, color: rush ? "text-critical" : "text-optimal", bg: rush ? "bg-critical-soft" : "bg-optimal-soft" },
     { label: "Data Processed Locally", value: "98.4%", meta: "Privacy-first edge AI", icon: CloudOff, color: "text-insight", bg: "bg-insight-soft" },
@@ -123,21 +136,77 @@ function Overview({ rush, stockout }: { rush: boolean; stockout: boolean }) {
     <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6">{kpis.map(({ label, value, meta, icon: Icon, color, bg }, index) => <div key={label} className="rounded-md border border-border bg-card p-4 shadow-sm"><div className="flex items-start justify-between"><span className="text-[10px] font-bold uppercase text-muted-foreground">{label}</span><span className={`rounded-md p-1.5 ${bg} ${color}`}><Icon className="size-4"/></span></div><div className="mt-3 font-display text-xl font-bold">{value}</div><div className={`mt-1 text-[10px] font-bold ${color}`}>{meta}</div><svg viewBox="0 0 100 16" className="mt-3 h-5 w-full text-insight" aria-hidden="true"><path d={index % 2 ? "M0 12 L10 8 L20 11 L30 5 L40 10 L50 6 L60 12 L70 4 L80 9 L90 5 L100 8" : "M0 9 L10 11 L20 6 L30 12 L40 5 L50 9 L60 4 L70 10 L80 6 L90 11 L100 7"} fill="none" stroke="currentColor" strokeWidth="1.5"/></svg></div>)}</div>
     {rush && <div className="flex flex-col gap-3 rounded-md border border-warning/40 bg-warning-soft p-4 sm:flex-row sm:items-center"><AlertTriangle className="size-5 shrink-0 text-warning"/><div className="flex-1"><div className="text-sm font-bold">Queue spike detected at Checkout Zone</div><div className="text-xs text-muted-foreground">Entrance inflow is 40% above baseline. Counter 4 should be opened now.</div></div><Button size="sm" onClick={() => {}}>Review staffing <ChevronRight/></Button></div>}
     <div className="grid gap-4 xl:grid-cols-12">
-      <div className="rounded-md border border-border bg-card p-4 shadow-sm xl:col-span-7"><SectionTitle icon={Camera} title="Live Computer Vision Grid" note="On-device processing • No identifiable data stored"/>
-        <div className="mb-3 flex flex-wrap items-center gap-2 rounded-md border border-border bg-muted/40 px-3 py-2">
-          <Video className="size-4 text-insight"/>
-          <span className="flex-1 text-[11px] font-bold">Connect this device as an edge camera</span>
-          {live.active && <Button size="sm" variant="outline" onClick={live.flip}>Flip camera</Button>}
-          <Button size="sm" variant={live.active ? "outline" : "default"} onClick={live.active ? live.stop : live.start}>{live.active ? "Stop device camera" : "Use phone / laptop cam"}</Button>
+      <div className="rounded-md border border-border bg-card p-4 shadow-sm xl:col-span-7"><SectionTitle icon={Camera} title="Live Computer Vision Grid" note="2 live inputs • local motion tracking • no identifiable data stored"/>
+        <div className="grid gap-3 md:grid-cols-2">
+          <LiveCameraSlot index={0} camera={cameraOne} image={entranceImg} title="Entrance Tripwire" counts={crossings[0]} onCrossing={(direction) => registerCrossing(0, direction)}/>
+          <LiveCameraSlot index={1} camera={cameraTwo} image={checkoutImg} title="Checkout Tripwire" counts={crossings[1]} onCrossing={(direction) => registerCrossing(1, direction)}/>
         </div>
-        {live.error && <div className="mb-3 rounded-md border border-critical/40 bg-critical-soft px-3 py-2 text-[11px] font-bold text-critical">{live.error}</div>}
-        <div className="grid grid-cols-2 gap-2"><CameraFeed image={entranceImg} title={live.active ? "This Device" : "Entrance"} tag={live.active ? "Local stream • Nothing uploaded" : rush ? "Inflow: 61/min • +40%" : "Shopper #104 • Dwell 3m 12s"} boxes={3} stream={live.stream}/><CameraFeed image={checkoutImg} title="Checkout Zone" tag={rush ? "Queue: 14 People • ALERT" : "Queue Counter: 6 People"} boxes={4} critical={rush}/><CameraFeed image={groceryImg} title="Aisle 4 • Grocery" tag={stockout ? "Shelf 2 • EMPTY DETECTED" : "Shelf health: 91%"} boxes={3} critical={stockout}/><CameraFeed image={electronicsImg} title="Aisle 7 • Electronics" tag="Shopper #218 • Dwell 1m 08s" boxes={3}/></div></div>
+        <div className="mt-3 grid grid-cols-2 gap-2"><CameraFeed image={groceryImg} title="Aisle 4 • Grocery" tag={stockout ? "Shelf 2 • EMPTY DETECTED" : "Shelf health: 91%"} boxes={3} critical={stockout}/><CameraFeed image={electronicsImg} title="Aisle 7 • Electronics" tag="Shopper #218 • Dwell 1m 08s" boxes={3}/></div></div>
       <div className="space-y-4 xl:col-span-5">
         <div className="rounded-md border border-border bg-card p-4 shadow-sm"><SectionTitle icon={MapPinned} title="Store Demand Snapshot"/><div className="grid h-48 grid-cols-5 grid-rows-4 gap-2 rounded-md bg-muted/50 p-3"><div className="col-span-2 row-span-2 flex items-end rounded-md border border-warning/40 bg-warning-soft p-2 text-xs font-bold">Produce · 34</div><div className="col-span-3 row-span-2 flex items-end rounded-md border border-critical/40 bg-critical-soft p-2 text-xs font-bold text-critical">Grocery · 41</div><div className="col-span-2 row-span-2 flex items-end rounded-md border border-optimal/40 bg-optimal-soft p-2 text-xs font-bold">Electronics · 18</div><div className="col-span-3 flex items-end rounded-md border border-optimal/40 bg-optimal-soft p-2 text-xs font-bold">Entrance · 11</div><div className="col-span-3 flex items-end rounded-md border border-warning/40 bg-warning-soft p-2 text-xs font-bold">Checkout · 15</div></div></div>
         <div className="grid grid-cols-2 gap-4"><div className="rounded-md border border-border bg-card p-4 shadow-sm"><div className="text-xs font-bold">Shelf Availability</div><div className="mt-3 font-display text-3xl font-bold text-optimal">92.4%</div><div className="mt-2 h-2 overflow-hidden rounded-full bg-muted"><div className="h-full w-[92%] bg-optimal"/></div><div className="mt-2 text-[10px] text-muted-foreground">3 urgent items</div></div><div className="rounded-md border border-border bg-card p-4 shadow-sm"><div className="text-xs font-bold">Edge Health</div><div className="mt-3 font-display text-3xl font-bold text-optimal">100%</div><div className="mt-2 h-2 overflow-hidden rounded-full bg-muted"><div className="h-full w-full bg-optimal"/></div><div className="mt-2 text-[10px] text-muted-foreground">12 nodes online</div></div></div>
       </div>
     </div>
   </div>;
+}
+
+type DeviceCamera = ReturnType<typeof useDeviceCamera>;
+
+function LiveCameraSlot({ index, camera, image, title, counts, onCrossing }: { index: number; camera: DeviceCamera; image: string; title: string; counts: { entries: number; exits: number }; onCrossing: (direction: "in" | "out") => void }) {
+  return <div className="rounded-md border border-border bg-background p-2">
+    <TrackedCameraFeed stream={camera.stream} image={image} title={title} onCrossing={onCrossing}/>
+    <div className="mt-2 flex items-center justify-between gap-2"><div><div className="text-[10px] font-bold">CAMERA {index + 1}</div><div className="font-mono text-[9px] text-muted-foreground">IN {counts.entries} • OUT {counts.exits}</div></div><div className="flex gap-1">{camera.active && camera.devices.length > 1 && <Button size="sm" variant="ghost" onClick={camera.nextDevice}>Next lens</Button>}<Button size="sm" variant={camera.active ? "outline" : "default"} onClick={camera.active ? camera.stop : camera.start}>{camera.active ? "Stop" : "Start camera"}</Button></div></div>
+    {camera.error && <div className="mt-2 rounded-sm bg-critical-soft px-2 py-1.5 text-[10px] font-bold text-critical">{camera.error}</div>}
+    <div className="mt-2 flex gap-1"><Button size="sm" variant="ghost" className="flex-1" onClick={() => onCrossing("in")}><LogIn/>Test entry</Button><Button size="sm" variant="ghost" className="flex-1" onClick={() => onCrossing("out")}><LogOut/>Test exit</Button></div>
+  </div>;
+}
+
+function TrackedCameraFeed({ stream, image, title, onCrossing }: { stream: MediaStream | null; image: string; title: string; onCrossing: (direction: "in" | "out") => void }) {
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const previousFrame = useRef<Uint8ClampedArray | null>(null);
+  const previousCenter = useRef<number | null>(null);
+  const lastCrossing = useRef(0);
+  useEffect(() => { if (videoRef.current) videoRef.current.srcObject = stream; }, [stream]);
+  useEffect(() => {
+    if (!stream) return;
+    let frame = 0;
+    let lastSample = 0;
+    const track = (time: number) => {
+      const video = videoRef.current;
+      const canvas = canvasRef.current;
+      if (video && canvas && video.readyState >= 2 && time - lastSample > 180) {
+        lastSample = time;
+        const context = canvas.getContext("2d", { willReadFrequently: true });
+        if (context) {
+          context.drawImage(video, 0, 0, 96, 54);
+          const pixels = context.getImageData(0, 0, 96, 54).data;
+          const prior = previousFrame.current;
+          if (prior) {
+            let weightedX = 0; let moving = 0;
+            for (let i = 0; i < pixels.length; i += 16) {
+              const difference = Math.abs(pixels[i] - prior[i]) + Math.abs(pixels[i + 1] - prior[i + 1]) + Math.abs(pixels[i + 2] - prior[i + 2]);
+              if (difference > 85) { weightedX += (i / 4 % 96); moving += 1; }
+            }
+            if (moving > 45) {
+              const center = weightedX / moving;
+              const before = previousCenter.current;
+              if (before !== null && time - lastCrossing.current > 1500) {
+                if (before < 43 && center > 53) { onCrossing("in"); lastCrossing.current = time; }
+                if (before > 53 && center < 43) { onCrossing("out"); lastCrossing.current = time; }
+              }
+              previousCenter.current = center;
+            }
+          }
+          previousFrame.current = new Uint8ClampedArray(pixels);
+        }
+      }
+      frame = requestAnimationFrame(track);
+    };
+    frame = requestAnimationFrame(track);
+    return () => { cancelAnimationFrame(frame); previousFrame.current = null; previousCenter.current = null; };
+  }, [stream, onCrossing]);
+  return <div className="relative aspect-video overflow-hidden rounded-sm bg-muted">{stream ? <video ref={videoRef} autoPlay playsInline muted className="h-full w-full object-cover"/> : <img src={image} alt={`${title} camera preview`} className="h-full w-full object-cover saturate-[.7]"/>}<canvas ref={canvasRef} width="96" height="54" className="hidden"/><div className="absolute inset-y-0 left-1/2 border-l-2 border-dashed border-warning"><span className="absolute left-1 top-2 whitespace-nowrap rounded-sm bg-warning px-1.5 py-1 font-mono text-[8px] font-bold text-primary-foreground">AI TRIPWIRE</span></div><div className="absolute inset-x-0 bottom-0 flex justify-between bg-foreground/70 px-2 py-1.5 text-[9px] font-bold text-primary-foreground"><span>{title}</span><span>{stream ? "TRACKING LIVE" : "CAMERA READY"}</span></div></div>;
 }
 
 function CameraFeed({ image, title, tag, boxes, critical = false, stream = null }: { image: string; title: string; tag: string; boxes: number; critical?: boolean; stream?: MediaStream | null }) {
