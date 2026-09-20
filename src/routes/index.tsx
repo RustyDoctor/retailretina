@@ -138,8 +138,8 @@ function Overview({ rush, stockout, activeShoppers, setActiveShoppers }: { rush:
     <div className="grid gap-4 xl:grid-cols-12">
       <div className="rounded-md border border-border bg-card p-4 shadow-sm xl:col-span-7"><SectionTitle icon={Camera} title="Live Computer Vision Grid" note="2 live inputs • local motion tracking • no identifiable data stored"/>
         <div className="grid gap-3 md:grid-cols-2">
-          <LiveCameraSlot index={0} camera={cameraOne} image={entranceImg} title="Entrance Tripwire" counts={crossings[0]} onCrossing={(direction) => registerCrossing(0, direction)}/>
-          <LiveCameraSlot index={1} camera={cameraTwo} image={checkoutImg} title="Checkout Tripwire" counts={crossings[1]} onCrossing={(direction) => registerCrossing(1, direction)}/>
+          <LiveCameraSlot index={0} camera={cameraOne} image={entranceImg} title="Entrance Tripwire" counts={crossings[0]!} onCrossing={(direction) => registerCrossing(0, direction)}/>
+          <LiveCameraSlot index={1} camera={cameraTwo} image={checkoutImg} title="Checkout Tripwire" counts={crossings[1]!} onCrossing={(direction) => registerCrossing(1, direction)}/>
         </div>
         <div className="mt-3 grid grid-cols-2 gap-2"><CameraFeed image={groceryImg} title="Aisle 4 • Grocery" tag={stockout ? "Shelf 2 • EMPTY DETECTED" : "Shelf health: 91%"} boxes={3} critical={stockout}/><CameraFeed image={electronicsImg} title="Aisle 7 • Electronics" tag="Shopper #218 • Dwell 1m 08s" boxes={3}/></div></div>
       <div className="space-y-4 xl:col-span-5">
@@ -185,7 +185,7 @@ function TrackedCameraFeed({ stream, image, title, onCrossing }: { stream: Media
           if (prior) {
             let weightedX = 0; let moving = 0;
             for (let i = 0; i < pixels.length; i += 16) {
-              const difference = Math.abs(pixels[i] - prior[i]) + Math.abs(pixels[i + 1] - prior[i + 1]) + Math.abs(pixels[i + 2] - prior[i + 2]);
+              const difference = Math.abs(pixels[i]! - prior[i]!) + Math.abs(pixels[i + 1]! - prior[i + 1]!) + Math.abs(pixels[i + 2]! - prior[i + 2]!);
               if (difference > 85) { weightedX += (i / 4 % 96); moving += 1; }
             }
             if (moving > 45) {
