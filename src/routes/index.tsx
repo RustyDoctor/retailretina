@@ -390,3 +390,59 @@ function Architecture() {
 function FlowNode({ icon: Icon, title, detail, highlight, good }: { icon: Icon; title: string; detail: string; highlight?: boolean; good?: boolean }) { return <div className={`flex min-h-36 flex-col items-center justify-center rounded-md border p-4 text-center ${highlight ? "border-insight/40 bg-insight-soft" : good ? "border-optimal/40 bg-optimal-soft" : "border-border bg-background"}`}><Icon className={`mb-3 size-8 ${highlight ? "text-insight" : good ? "text-optimal" : "text-muted-foreground"}`}/><div className="text-sm font-extrabold">{title}</div><div className="mt-1 text-[11px] text-muted-foreground">{detail}</div></div>; }
 function FlowArrow() { return <div className="flex items-center justify-center"><ArrowUpRight className="size-5 rotate-45 text-muted-foreground md:rotate-0"/></div>; }
 function MetricGauge({ value, max, suffix, label, note }: { value: number; max: number; suffix: string; label: string; note: string }) { const pct = Math.round(value/max*100); return <div className="rounded-md border border-border bg-card p-5"><div className="flex items-center justify-between"><CircleGauge className="size-6 text-insight"/><span className="font-mono text-[10px] text-optimal">OPTIMAL</span></div><div className="mt-5 text-3xl font-extrabold">{value}<span className="text-base text-muted-foreground">{suffix}</span></div><div className="mt-1 text-sm font-bold">{label}</div><div className="text-[10px] text-muted-foreground">{note}</div><div className="mt-4 h-1.5 rounded-full bg-muted"><div className="h-full rounded-full bg-insight" style={{ width: `${pct}%` }}/></div></div>; }
+const hourlyTraffic = [88,142,210,268,312,405,468,392,301,356,470,388,244,150];
+const hourLabels = ["9a","10a","11a","12p","1p","2p","3p","4p","5p","6p","7p","8p","9p","10p"];
+const weekdayTraffic = [["Mon",1980],["Tue",2140],["Wed",2260],["Thu",2480],["Fri",3120],["Sat",3860],["Sun",3410]] as const;
+const riskItems = [
+  ["Organic Whole Milk 1L", "SKU 41987", 46, 22, 3],
+  ["Sparkling Water 8pk", "SKU 51903", 18, 12, 4],
+  ["Wireless Earbuds Pro", "SKU 92388", 9, 4, 5],
+  ["Free Range Eggs 12pk", "SKU 38421", 120, 28, 2],
+  ["Premium Ground Coffee", "SKU 84116", 96, 15, 6],
+] as const;
+
+function TrafficStaffing({ rush, activeShoppers }: { rush: boolean; activeShoppers: number }) {
+  const traffic = hourlyTraffic.map(v => rush ? Math.round(v * 1.28) : v);
+  const peakIndex = traffic.indexOf(Math.max(...traffic));
+  const maxTraffic = Math.max(...traffic);
+  const maxWeek = Math.max(...weekdayTraffic.map(([, v]) => v));
+  const staffPlan = traffic.map(v => Math.max(4, Math.round(v / 42)));
+  return <div className="space-y-5">
+    <div className="grid gap-4 md:grid-cols-3">
+      {[["Busiest hour today", `${hourLabels[peakIndex]} • ${maxTraffic} visitors`, "Peak inflow window"],
+        ["Live active shoppers", `${activeShoppers}`, "Tripwire-verified count"],
+        ["Recommended peak staff", `${Math.max(...staffPlan)} associates`, "AI shift allocation"]].map(([label, value, note]) =>
+        <div key={label} className="rounded-md border border-border bg-card p-4"><div className="text-[10px] font-bold uppercase text-muted-foreground">{label}</div><div className="mt-2 font-display text-2xl font-bold">{value}</div><div className="text-[10px] text-muted-foreground">{note}</div></div>)}
+    </div>
+    <div className="rounded-md border border-border bg-card p-4">
+      <SectionTitle icon={BarChart3} title="Hourly Footfall" note="Shoppers entering per hour, edge-counted"/>
+      <div className="flex h-48 items-end gap-2">{traffic.map((v, i) => <div key={hourLabels[i]} className="flex flex-1 flex-col items-center gap-2"><div className={`w-full rounded-t-sm ${i === peakIndex ? "bg-critical" : v > maxTraffic * 0.7 ? "bg-warning" : "bg-insight"}`} style={{ height: `${(v / maxTraffic) * 100}%` }} title={`${v} shoppers`}/><span className="text-[9px] text-muted-foreground">{hourLabels[i]}</span></div>)}</div>
+    </div>
+    <div className="grid gap-4 xl:grid-cols-2">
+      <div className="rounded-md border border-border bg-card p-4">
+        <SectionTitle icon={CalendarDays} title="Weekly Demand Pattern" note="Total visitors by weekday"/>
+        <div className="space-y-3">{weekdayTraffic.map(([day, v]) => <div key={day} className="grid grid-cols-[46px_1fr_auto] items-center gap-3"><span className="text-xs font-bold">{day}</span><div className="h-6 overflow-hidden rounded-sm bg-muted"><div className={`h-full ${v === maxWeek ? "bg-critical" : "bg-insight"}`} style={{ width: `${(v / maxWeek) * 100}%` }}/></div><span className="font-mono text-[10px] text-muted-foreground">{v}</span></div>)}</div>
+      </div>
+      <div className="rounded-md border border-border bg-card p-4">
+        <SectionTitle icon={UserRoundCheck} title="Predictive Staffing Heatmap" note="Associates recommended per hour"/>
+        <div className="grid grid-cols-7 gap-1.5">{staffPlan.map((s, i) => { const intensity = s / Math.max(...staffPlan); const tone = intensity > 0.85 ? "bg-critical-soft text-critical border-critical/40" : intensity > 0.6 ? "bg-warning-soft text-warning border-warning/40" : "bg-optimal-soft text-optimal border-optimal/40"; return <div key={hourLabels[i]} className={`rounded-sm border p-2 text-center ${tone}`}><div className="text-[9px] font-bold">{hourLabels[i]}</div><div className="text-sm font-extrabold">{s}</div></div>; })}</div>
+      </div>
+    </div>
+    <HighRiskInventory rush={rush}/>
+  </div>;
+}
+
+function HighRiskInventory({ rush }: { rush: boolean }) {
+  const rows = riskItems.map(([name, sku, stock, velocity, shipmentDays]) => {
+    const dailySales = rush ? Math.round(velocity * 1.25) : velocity;
+    const daysLeft = +(stock / dailySales).toFixed(1);
+    const shortfall = Math.max(0, Math.round(dailySales * shipmentDays - stock));
+    return { name, sku, stock, dailySales, shipmentDays, daysLeft, shortfall, atRisk: daysLeft < shipmentDays };
+  }).filter(r => r.atRisk).sort((a, b) => a.daysLeft - b.daysLeft);
+  return <div className="rounded-md border border-border bg-card p-4">
+    <SectionTitle icon={AlertTriangle} title="High-Risk Inventory" note="Items projected to deplete before the next scheduled shipment"/>
+    {rows.length === 0 ? <div className="rounded-md border border-optimal/40 bg-optimal-soft p-4 text-xs font-bold text-optimal">All monitored SKUs have enough cover until the next shipment.</div> :
+    <div className="overflow-x-auto"><table className="w-full text-left text-xs"><thead><tr className="text-[10px] uppercase text-muted-foreground"><th className="py-2 pr-3">Item</th><th className="py-2 pr-3">Stock</th><th className="py-2 pr-3">Daily sales</th><th className="py-2 pr-3">Days of cover</th><th className="py-2 pr-3">Shipment in</th><th className="py-2">Projected shortfall</th></tr></thead>
+      <tbody>{rows.map(r => <tr key={r.sku} className="border-t border-border"><td className="py-3 pr-3"><div className="font-bold">{r.name}</div><div className="font-mono text-[10px] text-muted-foreground">{r.sku}</div></td><td className="py-3 pr-3 font-mono">{r.stock}</td><td className="py-3 pr-3 font-mono">{r.dailySales}/day</td><td className="py-3 pr-3"><span className={`rounded-sm px-2 py-1 font-bold ${r.daysLeft < 1 ? "bg-critical-soft text-critical" : "bg-warning-soft text-warning"}`}>{r.daysLeft}d</span></td><td className="py-3 pr-3 font-mono">{r.shipmentDays}d</td><td className="py-3 font-bold text-critical">{r.shortfall} units</td></tr>)}</tbody></table></div>}
+  </div>;
+}
