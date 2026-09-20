@@ -172,6 +172,44 @@ const demandZones: DemandZone[] = [
   { name: "Checkout", shoppers: 15, rushShoppers: 40, dwell: "2m 08s", staff: 4, recommended: 5, rushRecommended: 7, area: "col-span-5 row-span-2" },
 ];
 
+function StoreBlueprint() {
+  const aisles = [28, 37, 46, 55, 64, 73];
+  const checkouts = [36, 47, 58, 69, 80];
+
+  return <svg aria-hidden="true" className="pointer-events-none absolute inset-2 h-[calc(100%-1rem)] w-[calc(100%-1rem)] text-muted-foreground sm:inset-4 sm:h-[calc(100%-2rem)] sm:w-[calc(100%-2rem)]" viewBox="0 0 100 100" preserveAspectRatio="none">
+    <g fill="none" stroke="currentColor" strokeLinecap="square" strokeLinejoin="miter">
+      <path className="opacity-45" strokeWidth="1.3" d="M2 2H98V98H61M39 98H2V2"/>
+      <path className="opacity-20" strokeWidth="0.45" strokeDasharray="1.2 1.2" d="M5 31H95M5 74H95M30 5V29M72 5V29M25 76V95"/>
+
+      <g className="opacity-25" strokeWidth="0.75">
+        <path d="M7 7H28V25H7zM32 7H69V25H32zM74 7H93V25H74z"/>
+        <path d="M9 10H26M9 14H26M9 18H26M9 22H26"/>
+        <path d="M35 10H66M35 15H66M35 20H66"/>
+        <path d="M77 10H90M77 14H90M77 18H90M77 22H90"/>
+      </g>
+
+      <g className="opacity-35" strokeWidth="0.7">
+        {aisles.map(x => <g key={x}><path d={`M${x} 36V68`}/><path d={`M${x + 4} 36V68`}/><path strokeWidth="0.35" d={`M${x} 40H${x + 4}M${x} 46H${x + 4}M${x} 52H${x + 4}M${x} 58H${x + 4}M${x} 64H${x + 4}`}/></g>)}
+      </g>
+
+      <g className="opacity-40" strokeWidth="0.8">
+        <path d="M5 35H20V69H5zM8 39H17M8 45H17M8 51H17M8 57H17M8 63H17"/>
+        <path d="M78 35H95V69H78zM81 39H92M81 46H92M81 53H92M81 60H92M81 66H92"/>
+      </g>
+
+      <g className="opacity-45" strokeWidth="0.85">
+        {checkouts.map(x => <g key={x}><path d={`M${x} 80H${x + 6}V91H${x}`}/><circle cx={x + 4.8} cy="82.5" r="0.8"/></g>)}
+        <path d="M7 79H25V91H7zM10 82H22M10 86H22"/>
+      </g>
+
+      <g className="opacity-55" strokeWidth="1">
+        <path d="M39 98V94M61 98V94M39 94Q50 84 61 94"/>
+        <path d="M46 96L50 92L54 96"/>
+      </g>
+    </g>
+  </svg>;
+}
+
 function DemandHeatMap({ rush }: { rush: boolean }) {
   const [staffing, setStaffing] = useState<Record<string, number>>(() => Object.fromEntries(demandZones.map(zone => [zone.name, zone.staff])));
   const [lastMove, setLastMove] = useState<string | null>(null);
@@ -197,12 +235,13 @@ function DemandHeatMap({ rush }: { rush: boolean }) {
         <div className="mb-4 flex flex-wrap gap-4 text-[10px] font-bold text-muted-foreground"><span className="flex items-center gap-1.5"><span className="size-2 rounded-full bg-optimal"/>Balanced</span><span className="flex items-center gap-1.5"><span className="size-2 rounded-full bg-warning"/>High demand</span><span className="flex items-center gap-1.5"><span className="size-2 rounded-full bg-critical"/>Urgent</span><span className="ml-auto font-mono">142 ACTIVE SHOPPERS</span></div>
         <div className="relative overflow-hidden rounded-md border-2 border-border bg-background p-2 sm:p-4">
           <div className="pointer-events-none absolute inset-0 opacity-30 [background-image:linear-gradient(var(--border)_1px,transparent_1px),linear-gradient(90deg,var(--border)_1px,transparent_1px)] [background-size:24px_24px]"/>
-          <div className="relative grid min-h-[500px] grid-cols-7 grid-rows-7 gap-2">
+          <StoreBlueprint/>
+          <div className="relative z-10 grid min-h-[500px] grid-cols-7 grid-rows-7 gap-2">
             {zoneData.map(zone => {
               const gap = zone.target - zone.currentStaff;
               const urgent = gap >= 2 || zone.activeShoppers / Math.max(zone.currentStaff, 1) > 8;
               const warning = !urgent && (gap > 0 || zone.activeShoppers / Math.max(zone.currentStaff, 1) > 6);
-              const tone = urgent ? "border-critical/70 bg-critical-soft" : warning ? "border-warning/70 bg-warning-soft" : "border-optimal/60 bg-optimal-soft";
+              const tone = urgent ? "border-critical/70 bg-critical-soft/85" : warning ? "border-warning/70 bg-warning-soft/85" : "border-optimal/60 bg-optimal-soft/85";
               const text = urgent ? "text-critical" : warning ? "text-warning" : "text-optimal";
               return <div key={zone.name} className={`${zone.area} relative flex min-w-0 flex-col justify-between overflow-hidden rounded-md border ${tone} p-3 transition-colors`}>
                 {(urgent || warning) && <span className={`absolute right-2 top-2 size-2 rounded-full ${urgent ? "bg-critical" : "bg-warning"} animate-pulse`}/>} 
